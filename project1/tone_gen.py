@@ -1,6 +1,7 @@
 import argparse
 import numpy
 import time
+import matplotlib.pyplot as pyplot
 from pathlib import Path
 from pyaudio import PyAudio
 from typing import Union
@@ -103,11 +104,12 @@ def test():
     tone_generator.save(fourth_tone, Path('fourth_tone.wav'))
     tone_generator.save(one_octave_below, Path('one_octave_below.wav'))
 
-    print('Graphing tones...')
-    import matplotlib.pyplot as plt
-    plt.plot(reference_tone)
-    plt.plot(fourth_tone)
-    plt.plot(one_octave_below)
+    print('Graphing reference tone...')
+    # set the plot parameters so the sine wave is visible (instead of filling the entire plot)
+    pyplot.ylim(-1.1, 1.1)
+    pyplot.xlim(0, 100)
+    pyplot.plot(reference_tone)
+    pyplot.show()
 
     # print('Playing reference tone...')
     # tone_generator.play(reference_tone)
