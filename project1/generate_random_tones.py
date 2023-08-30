@@ -1,6 +1,6 @@
 import argparse
 
-from project1.tone_gen import generate_tone
+from tone_gen import generate_tone
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generates random musical tones.', epilog='EE513 Project 1')
