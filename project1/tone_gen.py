@@ -58,7 +58,7 @@ class ToneGenerator:
         self.stream.close()
         self.pyaudio.terminate()
 
-    def generate(self, tone_index: int, duration: float, file: Union[None, Path] = None) -> numpy.ndarray:
+    def generate(self, tone_index: int, duration: float) -> numpy.ndarray:
         """
         Generates a tone with the specified frequency, duration, sampling frequency, and index.
 
@@ -70,13 +70,8 @@ class ToneGenerator:
         # calculate the frequency of the tone based on the index and the scale
         frequency = self.reference_frequency * 2 ** (tone_index / self.scale)
         # generate sine wave with the specified frequency and duration at the specified sampling frequency
-        sin_wave = numpy.sin(
+        return numpy.sin(
             2 * numpy.pi * frequency * numpy.arange(duration * self.sampling_frequency) / self.sampling_frequency)
-
-        if file is not None:
-            save(sin_wave, file, int(self.sampling_frequency))
-
-        return sin_wave
 
     def play(self, sound: numpy.ndarray):
         """
@@ -86,16 +81,14 @@ class ToneGenerator:
         """
         self.stream.write((sound * 127 + 128).astype(numpy.uint8).tobytes())
 
+    def save(self, sound: numpy.ndarray, file: Path):
+        """
+        Saves the specified sound to a wav file.
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Generates musical tones.', epilog='EE513 Project 1')
-    parser.add_argument('-f', '--frequency', type=float, required=True, help='Frequency of the tone in Hz')
-    parser.add_argument('-d', '--duration', type=float, required=True, help='Duration of the tone in seconds')
-    parser.add_argument('-sf', '--sampling-frequency', type=float, default=16e3, help='Sampling frequency in Hz')
-    parser.add_argument('-s', '--scale', type=int, default=6, help='Number of tones in the scale')
-    parser.add_argument('-i', '--tone-index', type=int, default=0, help='Index of the tone')
-    parser.add_argument('-o', '--output', type=Path, default=Path('output.wav'), help='Output file name')
-    args = parser.parse_args()
+        :param sound: Sound to save as a numpy array
+        :param file: Name of the file to save the sound to
+        """
+        save(sound, file, int(self.sampling_frequency))
 
 
 def test():
@@ -104,19 +97,44 @@ def test():
     fourth_tone = tone_generator.generate(3, 0.25)
     one_octave_below = tone_generator.generate(-6, 0.5)
 
-    print('Playing reference tone...')
-    tone_generator.play(reference_tone)
-    time.sleep(0.5)
-    print('Playing fourth tone...')
-    tone_generator.play(fourth_tone)
-    time.sleep(0.5)
-    print('Playing one octave below...')
-    tone_generator.play(one_octave_below)
-    time.sleep(1)
+    # save the tones to wav files
+    print('Saving tones to wav files...')
+    tone_generator.save(reference_tone, Path('reference_tone.wav'))
+    tone_generator.save(fourth_tone, Path('fourth_tone.wav'))
+    tone_generator.save(one_octave_below, Path('one_octave_below.wav'))
 
-    # generate all tones -6 to 6 and play them
-    for i in range(-6, 7):
-        tone = tone_generator.generate(i, 1)
-        print(f'Playing tone {i}...')
-        tone_generator.play(tone)
-        time.sleep(0.5)
+    print('Graphing tones...')
+    import matplotlib.pyplot as plt
+    plt.plot(reference_tone)
+    plt.plot(fourth_tone)
+    plt.plot(one_octave_below)
+
+    # print('Playing reference tone...')
+    # tone_generator.play(reference_tone)
+    # time.sleep(0.5)
+    # print('Playing fourth tone...')
+    # tone_generator.play(fourth_tone)
+    # time.sleep(0.5)
+    # print('Playing one octave below...')
+    # tone_generator.play(one_octave_below)
+    # time.sleep(1)
+    #
+    # # generate all tones -6 to 6 and play them
+    # for i in range(-6, 7):
+    #     tone = tone_generator.generate(i, 1)
+    #     print(f'Playing tone {i}...')
+    #     tone_generator.play(tone)
+    #     time.sleep(0.5)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Generates musical tones.', epilog='EE513 Project 1')
+    parser.add_argument('-f', '--frequency', type=float, required=False, help='Frequency of the tone in Hz')
+    parser.add_argument('-d', '--duration', type=float, required=False, help='Duration of the tone in seconds')
+    parser.add_argument('-sf', '--sampling-frequency', type=float, default=16e3, help='Sampling frequency in Hz')
+    parser.add_argument('-s', '--scale', type=int, default=6, help='Number of tones in the scale')
+    parser.add_argument('-i', '--tone-index', type=int, default=0, help='Index of the tone')
+    parser.add_argument('-o', '--output', type=Path, default=Path('output.wav'), help='Output file name')
+    args = parser.parse_args()
+
+    test()
