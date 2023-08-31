@@ -4,8 +4,6 @@ from pathlib import Path
 from pyaudio import PyAudio
 import logging
 
-# custom log format that includes the logger name, timestamp, and message. Conditional formatting is used to color the
-# log level based on severity.
 logging.basicConfig(format='%(asctime)s %(name)s: %(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
