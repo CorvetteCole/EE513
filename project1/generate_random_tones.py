@@ -4,7 +4,7 @@ from random import randint
 from tone_gen import ToneGenerator
 
 
-def generate_tones(number: int, durations: list, indices: list, sampling_frequency: float, scale: int,
+def generate_random_tones(number: int, durations: list, indices: list, sampling_frequency: float, scale: int,
                    reference_frequency: float):
     """
     Generates a number of random tones and saves them to a wav file.
@@ -39,5 +39,5 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--frequency', type=float, default=261.63, help='Reference frequency of the scale in Hz')
     args = parser.parse_args()
 
-    generate_tones(args.number, args.durations, args.note_indices, args.sampling_frequency, args.scale,
+    generate_random_tones(args.number, args.durations, args.note_indices, args.sampling_frequency, args.scale,
                    args.frequency)
