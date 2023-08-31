@@ -10,6 +10,8 @@ logging.basicConfig(format='%(asctime)s %(name)s: %(message)s', level=logging.DE
 log = logging.getLogger(__name__)
 
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
+# disable pyaudio logging
+logging.getLogger('pyaudio').setLevel(logging.WARNING)
 
 
 def save(sound: numpy.ndarray, file: Path, sampling_frequency: int):
@@ -108,8 +110,8 @@ class ToneGenerator:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generates musical tones.', epilog='EE513 Project 1')
-    parser.add_argument('-f', '--frequency', type=float, required=False, help='Reference frequency of the scale in Hz')
-    parser.add_argument('-d', '--duration', type=float, required=False, help='Duration of the tone in seconds')
+    parser.add_argument('-f', '--frequency', type=float, required=True, help='Reference frequency of the scale in Hz')
+    parser.add_argument('-d', '--duration', type=float, required=True, help='Duration of the tone in seconds')
     parser.add_argument('-sf', '--sampling-frequency', type=float, default=16e3, help='Sampling frequency in Hz')
     parser.add_argument('-s', '--scale', type=int, default=6, help='Number of tones in the scale')
     parser.add_argument('-i', '--tone-index', type=int, default=0, help='Index of the tone')
