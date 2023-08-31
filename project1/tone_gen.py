@@ -8,6 +8,7 @@ logging.basicConfig(format='%(asctime)s %(name)s: %(message)s', level=logging.DE
 log = logging.getLogger(__name__)
 
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
+logging.getLogger('PIL').setLevel(logging.WARNING)
 
 
 def save(sound: numpy.ndarray, file: Path, sampling_frequency: int):

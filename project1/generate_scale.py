@@ -28,8 +28,8 @@ if __name__ == "__main__":
         pyplot.plot(tone)
         tones.append(tone)
 
-    pyplot.show()
     scale = numpy.concatenate(tones)
     tone_generator.save(scale,
                         f'scale_reference_frequency_{args.frequency}_sampling_frequency_{args.sampling_frequency}_scale_{args.scale}')
     tone_generator.play(scale)
+    pyplot.show()
