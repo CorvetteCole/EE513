@@ -5,6 +5,14 @@ import matplotlib.pyplot as pyplot
 from pathlib import Path
 from pyaudio import PyAudio
 from typing import Union
+import logging
+
+# custom log format that includes the logger name, timestamp, and message. Conditional formatting is used to color the
+# log level based on severity.
+logging.basicConfig(format='%(asctime)s %(name)s: %(message)s', level=logging.DEBUG)
+log = logging.getLogger(__name__)
+
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
 
 def save(sound: numpy.ndarray, file: Path, sampling_frequency: int):
@@ -45,6 +53,9 @@ class ToneGenerator:
         self.reference_frequency = reference_frequency
         self.sampling_frequency = sampling_frequency
 
+        log.info(f'Initializing ToneGenerator with reference frequency {reference_frequency} Hz, scale {scale}, and '
+                 f'sampling frequency {sampling_frequency} Hz')
+
         self.pyaudio = PyAudio()
         self.stream = self.pyaudio.open(format=self.pyaudio.get_format_from_width(1), channels=1,
                                         rate=int(sampling_frequency), output=True)
@@ -56,6 +67,7 @@ class ToneGenerator:
         """
         Closes the PyAudio stream.
         """
+        log.info('Cleaning up ToneGenerator')
         self.stream.close()
         self.pyaudio.terminate()
 
@@ -70,6 +82,8 @@ class ToneGenerator:
         """
         # calculate the frequency of the tone based on the index and the scale
         frequency = self.reference_frequency * 2 ** (tone_index / self.scale)
+        log.debug(
+            f'Generating tone with index {tone_index}, frequency {frequency} Hz, and duration {duration} seconds')
         # generate sine wave with the specified frequency and duration at the specified sampling frequency
         return numpy.sin(
             2 * numpy.pi * frequency * numpy.arange(duration * self.sampling_frequency) / self.sampling_frequency)
@@ -80,6 +94,7 @@ class ToneGenerator:
 
         :param sound: Sound to play as a numpy array
         """
+        log.debug(f'Playing sound with length {len(sound)}')
         self.stream.write((sound * 127 + 128).astype(numpy.uint8).tobytes())
 
     def save(self, sound: numpy.ndarray, file: Path):
@@ -99,16 +114,20 @@ def test():
     one_octave_below = tone_generator.generate(-6, 0.5)
 
     # save the tones to wav files
-    print('Saving tones to wav files...')
+    log.info('Saving tones to wav files...')
     tone_generator.save(reference_tone, Path('reference_tone.wav'))
     tone_generator.save(fourth_tone, Path('fourth_tone.wav'))
     tone_generator.save(one_octave_below, Path('one_octave_below.wav'))
 
-    print('Graphing reference tone...')
+    log.info('Graphing tones')
     # set the plot parameters so the sine wave is visible (instead of filling the entire plot)
     pyplot.ylim(-1.1, 1.1)
     pyplot.xlim(0, 100)
     pyplot.plot(reference_tone)
+    pyplot.plot(fourth_tone)
+    pyplot.plot(one_octave_below)
+    # add legend
+    pyplot.legend(['Reference Tone', 'Fourth Tone', 'One Octave Below'])
     pyplot.show()
 
     # print('Playing reference tone...')
@@ -131,7 +150,7 @@ def test():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generates musical tones.', epilog='EE513 Project 1')
-    parser.add_argument('-f', '--frequency', type=float, required=False, help='Frequency of the tone in Hz')
+    parser.add_argument('-f', '--frequency', type=float, required=False, help='Reference frequency of the scale in Hz')
     parser.add_argument('-d', '--duration', type=float, required=False, help='Duration of the tone in seconds')
     parser.add_argument('-sf', '--sampling-frequency', type=float, default=16e3, help='Sampling frequency in Hz')
     parser.add_argument('-s', '--scale', type=int, default=6, help='Number of tones in the scale')
