@@ -1,10 +1,7 @@
 import argparse
 import numpy
-import time
-import matplotlib.pyplot as pyplot
 from pathlib import Path
 from pyaudio import PyAudio
-from typing import Union
 import logging
 
 # custom log format that includes the logger name, timestamp, and message. Conditional formatting is used to color the
@@ -109,27 +106,6 @@ class ToneGenerator:
         save(sound, Path(self.output_folder, file), int(self.sampling_frequency))
 
 
-def test():
-    tone_generator = ToneGenerator(261.63, 6, 16e3)
-
-    # set the plot parameters so the sine wave is visible (instead of filling the entire plot)
-    pyplot.ylim(-1.1, 1.1)
-    pyplot.xlim(0, 100)
-    pyplot.legend([f'{i}' for i in range(-6, 7)])
-
-    # generate all tones -6 to 6
-    tones = []
-    for i in range(-6, 7):
-        tone = tone_generator.generate(i, 1 / 4)
-        pyplot.plot(tone)
-        tones.append(tone)
-
-    pyplot.show()
-
-    for tone in tones:
-        tone_generator.play(tone)
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generates musical tones.', epilog='EE513 Project 1')
     parser.add_argument('-f', '--frequency', type=float, required=False, help='Reference frequency of the scale in Hz')
@@ -140,4 +116,8 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output', type=Path, default=Path('output.wav'), help='Output file name')
     args = parser.parse_args()
 
-    test()
+    tone_generator = ToneGenerator(args.frequency, args.scale, args.sampling_frequency)
+
+    tone = tone_generator.generate(args.tone_index, args.duration)
+    tone_generator.save(tone, args.output)
+    tone_generator.play(tone)
