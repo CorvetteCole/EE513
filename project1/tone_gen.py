@@ -42,7 +42,7 @@ def save(sound: numpy.ndarray, file: Path, sampling_frequency: int):
 
 class ToneGenerator:
 
-    def __init__(self, reference_frequency: float, scale=6, sampling_frequency=16e3):
+    def __init__(self, reference_frequency: float, scale=6, sampling_frequency=16e3, output_folder=Path('output')):
         """
 
         :param reference_frequency: Frequency of the base tone in Hz. Default is 440 Hz.
@@ -59,6 +59,7 @@ class ToneGenerator:
         self.pyaudio = PyAudio()
         self.stream = self.pyaudio.open(format=self.pyaudio.get_format_from_width(1), channels=1,
                                         rate=int(sampling_frequency), output=True)
+        self.output_folder = output_folder
 
     def __del__(self):
         self.close()
@@ -97,55 +98,36 @@ class ToneGenerator:
         log.debug(f'Playing sound with length {len(sound)}')
         self.stream.write((sound * 127 + 128).astype(numpy.uint8).tobytes())
 
-    def save(self, sound: numpy.ndarray, file: Path):
+    def save(self, sound: numpy.ndarray, file: str):
         """
         Saves the specified sound to a wav file.
 
         :param sound: Sound to save as a numpy array
         :param file: Name of the file to save the sound to
         """
-        save(sound, file, int(self.sampling_frequency))
+        self.output_folder.mkdir(parents=True, exist_ok=True)
+        save(sound, Path(self.output_folder, file), int(self.sampling_frequency))
 
 
 def test():
     tone_generator = ToneGenerator(261.63, 6, 16e3)
-    reference_tone = tone_generator.generate(0, 1)
-    fourth_tone = tone_generator.generate(3, 0.25)
-    one_octave_below = tone_generator.generate(-6, 0.5)
 
-    # save the tones to wav files
-    log.info('Saving tones to wav files...')
-    tone_generator.save(reference_tone, Path('reference_tone.wav'))
-    tone_generator.save(fourth_tone, Path('fourth_tone.wav'))
-    tone_generator.save(one_octave_below, Path('one_octave_below.wav'))
-
-    log.info('Graphing tones')
     # set the plot parameters so the sine wave is visible (instead of filling the entire plot)
     pyplot.ylim(-1.1, 1.1)
     pyplot.xlim(0, 100)
-    pyplot.plot(reference_tone)
-    pyplot.plot(fourth_tone)
-    pyplot.plot(one_octave_below)
-    # add legend
-    pyplot.legend(['Reference Tone', 'Fourth Tone', 'One Octave Below'])
+    pyplot.legend([f'{i}' for i in range(-6, 7)])
+
+    # generate all tones -6 to 6
+    tones = []
+    for i in range(-6, 7):
+        tone = tone_generator.generate(i, 1 / 4)
+        pyplot.plot(tone)
+        tones.append(tone)
+
     pyplot.show()
 
-    # print('Playing reference tone...')
-    # tone_generator.play(reference_tone)
-    # time.sleep(0.5)
-    # print('Playing fourth tone...')
-    # tone_generator.play(fourth_tone)
-    # time.sleep(0.5)
-    # print('Playing one octave below...')
-    # tone_generator.play(one_octave_below)
-    # time.sleep(1)
-    #
-    # # generate all tones -6 to 6 and play them
-    # for i in range(-6, 7):
-    #     tone = tone_generator.generate(i, 1)
-    #     print(f'Playing tone {i}...')
-    #     tone_generator.play(tone)
-    #     time.sleep(0.5)
+    for tone in tones:
+        tone_generator.play(tone)
 
 
 if __name__ == "__main__":
