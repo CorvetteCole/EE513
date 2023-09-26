@@ -44,12 +44,6 @@ if __name__ == "__main__":
     pyplot.title('2.1a) Without zero-padding')
     pyplot.legend()
 
-
-    """
-    
-    
-    """
-
     # b)
     # Zero-pad the signals
     sp = numpy.pad(s, (0, 32))
