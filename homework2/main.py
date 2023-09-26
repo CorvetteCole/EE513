@@ -21,12 +21,10 @@ if __name__ == "__main__":
     double the signal lengths.
     """
     # Define the input signal
-    s = numpy.zeros(32)
-    s[11:22] = 1
-
-    # Define the FIR filter's impulse response
-    h = [(-0.75) ** n for n in range(32)]
-    h[30:32] = [0, 0]
+    N = 32
+    n = numpy.arange(N)
+    s = numpy.where((n >= 11) & (n <= 21), 1, 0)
+    h = numpy.where(n < 30, (-0.75) ** n, 0)
 
     # a)
     # Take the FFT of the signals
@@ -41,9 +39,16 @@ if __name__ == "__main__":
 
     pyplot.subplot(2, 1, 1)
     pyplot.plot(s, label='Original')
+    pyplot.plot(h, label='Filter')
     pyplot.plot(numpy.abs(filtered_signal), label='Filtered')
     pyplot.title('2.1a) Without zero-padding')
     pyplot.legend()
+
+
+    """
+    
+    
+    """
 
     # b)
     # Zero-pad the signals
@@ -59,6 +64,7 @@ if __name__ == "__main__":
 
     pyplot.subplot(2, 1, 2)
     pyplot.plot(sp, label='Original')
+    pyplot.plot(hp, label='Filter')
     pyplot.plot(numpy.abs(filtered_signal_padded), label='Filtered')
     pyplot.title('2.1b) With zero-padding')
     pyplot.legend()
