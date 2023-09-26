@@ -27,3 +27,7 @@ file with the `-h` or `--help` flag to see the available options.
 
 ## Homework
 ### Homework 2
+
+```shell
+python homework2/main.py
+```
