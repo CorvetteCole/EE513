@@ -1,8 +1,11 @@
 import argparse
 import numpy
 from pathlib import Path
+
+import pyaudio
 from pyaudio import PyAudio
 import logging
+import wave
 
 logging.basicConfig(format='%(asctime)s %(name)s: %(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -34,6 +37,38 @@ def save(sound: numpy.ndarray, file: Path, sampling_frequency: int):
     with open(file, 'wb') as f:
         f.write(header)
         f.write(sound_bytes)
+
+
+def play(sound: numpy.ndarray, stream: pyaudio.Stream):
+    """
+    Plays the specified sound using PyAudio.
+
+    :param sound: Sound to play as a numpy array
+    :param stream: PyAudio stream to play the sound on
+    """
+    log.debug(f'Playing sound with length {len(sound)}')
+    stream.write((sound * 127 + 128).astype(numpy.uint8).tobytes())
+
+
+# TODO test new save method using wave library
+def save_wave(sound: numpy.ndarray, file: Path, sampling_frequency: int):
+    """
+    Saves the specified sound to a wav file.
+
+    :param sound: Sound to save as a numpy array
+    :param file: Name of the file to save the sound to
+    :param sampling_frequency: Sampling frequency in Hz
+    """
+    # set the file extension to wav if it is not already
+    file = file.with_suffix('.wav')
+
+    # convert the sound to a byte array
+    sound_bytes = (sound * 127 + 128).astype(numpy.uint8).tobytes()
+
+    # write the sound to a wav file
+    with wave.open(str(file), 'wb') as f:
+        f.setparams((1, 1, sampling_frequency, 0, 'NONE', 'not compressed'))
+        f.writeframes(sound_bytes)
 
 
 class ToneGenerator:
@@ -75,7 +110,6 @@ class ToneGenerator:
         :param tone_index: Index of the tone in the scale. With a hexatonic scale, an index of 0 is the base tone, an
         index of 6 is an octave higher (frequency * 2), and an index of -6 is an octave lower (frequency / 2).
         :param duration: Duration of the tone in seconds
-        :param file: Name of the file to save the tone to. If None, the tone will not be saved.
         """
         # calculate the frequency of the tone based on the index and the scale
         frequency = self.reference_frequency * 2 ** (tone_index / self.scale)
