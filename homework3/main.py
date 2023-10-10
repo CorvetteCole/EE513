@@ -1,19 +1,23 @@
 import numpy
-from scipy import signal
+import scipy
 import matplotlib.pyplot as pyplot
 
 from project1.tone_gen import ToneGenerator
 
 
-def plot_spectrogram(figure: pyplot.figure, tone, sampling_frequency, nperseg, nfft, noverlap, window, mode, title,
-                     ylim=(256, 512)):
-    f, t, sxx = signal.spectrogram(tone, fs=sampling_frequency, nperseg=nperseg, nfft=nfft, noverlap=noverlap,
-                                   window=window, mode=mode)
-    figure.set_title(title)
-    figure.pcolormesh(t, f, sxx, shading='gouraud')
-    figure.set_ylabel('Frequency [Hz]')
-    figure.set_xlabel('Time [sec]')
-    figure.set_ylim(ylim)
+def plot_spectrogram(tone, sampling_frequency, nperseg, nfft, noverlap, window, mode, title,
+                     ylim=(256, 1024)):
+    f, t, sxx = scipy.signal.spectrogram(tone, fs=sampling_frequency, nperseg=nperseg, nfft=nfft, noverlap=noverlap,
+                                         window=window, mode=mode)
+    pyplot.figure()
+    pyplot.title(title)
+    pyplot.pcolormesh(t, f, 20 * numpy.log10(sxx), shading='gouraud')
+    pyplot.ylabel('Frequency [Hz]')
+    pyplot.xlabel('Time [sec]')
+    cbar = pyplot.colorbar()
+    cbar.ax.set_ylabel('Magnitude [dB]')
+    pyplot.ylim(ylim)
+    pyplot.show()
 
 
 if __name__ == "__main__":
@@ -39,25 +43,21 @@ if __name__ == "__main__":
     points to twice the amount of the window length. Compute and plot
     the spectrogram and explain the observed changes.
     """
-    toneGenerator = ToneGenerator(256, 12, 4e3)
+    toneGenerator = ToneGenerator(256, sampling_frequency=4e3)
     tones = [toneGenerator.generate(i, 0.25) for i in range(0, 13)]
     # for tone in tones:
     #     toneGenerator.play(tone)
     scale = numpy.concatenate(tones)
 
-    fig, axs = pyplot.subplots(3, 1, figsize=(6, 12))
     # Part a
-    plot_spectrogram(axs[0], scale, 4e3, 256, 256, 0, 'boxcar', 'magnitude',
-                     '3.1a) Spectrogram (window = 256 samples)')
+    plot_spectrogram(scale, 4e3, 256, 256, 0, 'hamming', 'magnitude',
+                     '3.1a) Spectrogram')
     # Part b
-    plot_spectrogram(axs[1], scale, 4e3, 256, 1024, 0, 'boxcar', 'magnitude',
-                     '3.1b) Spectrogram (window = 256 samples, nfft = 1024)')
+    plot_spectrogram(scale, 4e3, 256, 1024, 0, 'hamming', 'magnitude',
+                     '3.1b) Spectrogram')
     # Part c
-    plot_spectrogram(axs[2], scale, 4e3, 1024, 2048, 0, 'boxcar', 'magnitude',
-                     '3.1c) Spectrogram (window = 1024 samples, nfft = 2048)')
-
-    pyplot.tight_layout()
-    pyplot.show()
+    plot_spectrogram(scale, 4e3, 1024, 2048, 0, 'hamming', 'magnitude',
+                     '3.1c) Spectrogram')
 
     """
     3.2)
@@ -80,65 +80,68 @@ if __name__ == "__main__":
     explain the differences observed with the plots from part (a). Does
     this make sense since the sine function is not random?
     """
-    # Part a
-    white_noise = numpy.random.normal(0, 1, int(3 * 44.1e3))
+
+
+    def plot_ac_psd(tone, mxlag, sampling_rate, name):
+        tone_ac = scipy.signal.correlate(tone, tone, mode='full')
+        tone_ac = tone_ac[:int(mxlag * sampling_rate)]
+        tone_ac /= len(tone_ac)
+
+        tone_freq, tone_psd = scipy.signal.welch(tone, fs=sampling_rate, nperseg=16384)
+
+        pyplot.figure(figsize=(10, 6))
+
+        # AC plot
+        pyplot.subplot(2, 1, 1)
+        pyplot.plot(tone_ac)
+        pyplot.xlabel('milliseconds (ms)')
+        pyplot.ylabel('Auto-correlation')
+        pyplot.title(f'Auto-correlation of {name}')
+
+        # PSD plot
+        pyplot.subplot(2, 1, 2)
+        pyplot.plot(tone_freq, tone_psd)
+        pyplot.xlabel('Frequency (Hz)')
+        pyplot.xlim(0, 500)
+        pyplot.ylim(0, 16e-4)
+        pyplot.ylabel('Magnitude')
+        pyplot.title(f'Power Spectral Density of {name}')
+
+        pyplot.tight_layout()
+        pyplot.show()
+        pass
+
+
     bnum = [0.04957526213389, -0.06305581334498, 0.01483220320740]
     aden = [1.00000000000000, -1.80116083982126, 0.80257737639225]
-    pink_noise = signal.lfilter(bnum, aden, white_noise)
 
-    # calculate auto-correlation and power spectral density of the pink noise and white noise
-    white_noise_ac = signal.correlate(white_noise, white_noise)
-    white_noise_psd = numpy.abs(numpy.fft.fft(white_noise_ac))
-    pink_noise_ac = signal.correlate(pink_noise, pink_noise)
-    pink_noise_psd = numpy.abs(numpy.fft.fft(pink_noise_ac))
+    sampling_rate = 44100  # Sampling rate of 44.1 kHz
+    time = 3  # 3 seconds of noise
+    num_samples = sampling_rate * time
+    mxlag = 0.02
 
-    fig, axs = pyplot.subplots(2, 2, figsize=(12, 12))
-    fig.suptitle('3.2a) White Noise vs. Pink Noise')
-    axs[0, 0].plot(white_noise_ac)
-    axs[0, 0].set_title('White Noise Auto-Correlation')
-    axs[0, 0].set_xlabel('Sample')
-    axs[0, 0].set_ylabel('Correlation Coefficient')
-    axs[0, 1].plot(white_noise_psd)
-    axs[0, 1].set_title('White Noise Power Spectral Density')
-    axs[0, 1].set_xlabel('Frequency')
-    axs[0, 1].set_ylabel('Magnitude')
-    axs[1, 0].plot(pink_noise_ac)
-    axs[1, 0].set_title('Pink Noise Auto-Correlation')
-    axs[1, 0].set_xlabel('Sample')
-    axs[1, 0].set_ylabel('Correlation Coefficient')
-    axs[1, 1].plot(pink_noise_psd)
-    axs[1, 1].set_title('Pink Noise Power Spectral Density')
-    axs[1, 1].set_xlabel('Frequency')
-    axs[1, 1].set_ylabel('Magnitude')
-    pyplot.tight_layout()
-    pyplot.show()
+    # Generating white noise
+    white_noise = numpy.random.normal(0, 1, num_samples)
 
-    # Part b
-    sine = numpy.sqrt(2) * numpy.std(pink_noise) * numpy.sin(2 * numpy.pi * 220 * numpy.linspace(0, 3, int(3 * 44.1e3)))
-    pink_noise_with_sine = pink_noise + sine
+    # Applying the filter to the white noise to generate pink noise
+    pink_noise = scipy.signal.lfilter(bnum, aden, white_noise)
 
-    # calculate auto-correlation and power spectral density of the pink noise
-    pink_noise_with_sine_ac = signal.correlate(pink_noise_with_sine, pink_noise_with_sine)
-    pink_noise_with_sine_psd = numpy.abs(numpy.fft.fft(pink_noise_with_sine_ac))
+    plot_ac_psd(white_noise, mxlag, sampling_rate, 'White Noise')
+    plot_ac_psd(pink_noise, mxlag, sampling_rate, 'Pink Noise')
 
-    fig, axs = pyplot.subplots(2, 2, figsize=(12, 12))
-    fig.suptitle('3.2b) Pink Noise vs. Pink Noise with Sine')
-    axs[0, 0].plot(pink_noise_ac)
-    axs[0, 0].set_title('Pink Noise Auto-Correlation')
-    axs[0, 0].set_xlabel('Sample')
-    axs[0, 0].set_ylabel('Correlation Coefficient')
-    axs[0, 1].plot(pink_noise_psd)
-    axs[0, 1].set_title('Pink Noise Power Spectral Density')
-    axs[0, 1].set_xlabel('Frequency')
-    axs[0, 1].set_ylabel('Magnitude')
-    axs[1, 0].plot(pink_noise_with_sine_ac)
-    axs[1, 0].set_title('Pink Noise with Sine Auto-Correlation')
-    axs[1, 0].set_xlabel('Sample')
-    axs[1, 0].set_ylabel('Correlation Coefficient')
-    axs[1, 1].plot(pink_noise_with_sine_psd)
-    axs[1, 1].set_title('Pink Noise with Sine Power Spectral Density')
-    axs[1, 1].set_xlabel('Frequency')
-    axs[1, 1].set_ylabel('Magnitude')
-    pyplot.tight_layout()
-    pyplot.show()
 
+    # part b
+    # Sinusoid frequency
+    frequency = 220
+
+    # Sinusoid power
+    pink_noise_power = numpy.std(pink_noise)
+    sinusoid_amplitude = numpy.sqrt(2) * pink_noise_power
+
+    t = numpy.arange(num_samples) / sampling_rate
+    sinusoid = sinusoid_amplitude * numpy.sin(2 * numpy.pi * frequency * t)
+
+    # Adding sinusoid to pink noise
+    combined_signal = pink_noise + sinusoid
+
+    plot_ac_psd(combined_signal, mxlag, sampling_rate, 'Pink Noise with Sinusoid')

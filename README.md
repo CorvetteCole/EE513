@@ -31,3 +31,9 @@ file with the `-h` or `--help` flag to see the available options.
 ```shell
 python homework2/main.py
 ```
+
+### Homework 3
+
+```shell
+python homework3/main.py
+```
