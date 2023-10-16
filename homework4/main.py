@@ -15,7 +15,7 @@ def total_harmonic_distortion(signal: numpy.ndarray, sampling_frequency: float, 
     :return: The total harmonic distortion in dBc
     """
     # Calculate the periodogram of the input signal using a Kaiser window with beta = 38
-    f, pxx = scipy.signal.periodogram(signal, fs=sampling_frequency, window='kaiser', scaling='spectrum',
+    f, pxx = scipy.signal.periodogram(signal, fs=sampling_frequency, window=('kaiser', 38), scaling='spectrum',
                                       nfft=len(signal), return_onesided=True)
 
     # Find the fundamental frequency and its index in the periodogram
@@ -40,8 +40,22 @@ def center_clip(signal: numpy.ndarray, threshold: float, reduce_amplitude=False)
     clipped_signal = numpy.copy(signal)
     clipped_signal[numpy.abs(clipped_signal) < threshold] = 0
     if reduce_amplitude:
-        clipped_signal -= threshold
+        # can't just subtract the threshold because the signal is centered at 0
+        clipped_signal[clipped_signal > 0] -= threshold
+        clipped_signal[clipped_signal < 0] += threshold
     return clipped_signal
+
+
+def generate_unit_sinusoid(frequency: float, sampling_frequency: float, duration: float):
+    """
+    Generates a unit sinusoid with the specified frequency, sampling frequency, and duration.
+
+    :param frequency: Frequency of the unit sinusoid in Hz
+    :param sampling_frequency: Sampling frequency of the unit sinusoid in Hz
+    :param duration: Duration of the unit sinusoid in seconds
+    :return: The unit sinusoid
+    """
+    return numpy.sin(2 * numpy.pi * frequency * numpy.arange(duration * sampling_frequency) / sampling_frequency)
 
 
 if __name__ == "__main__":
@@ -51,16 +65,25 @@ if __name__ == "__main__":
     +.25 and estimate the resulting THD graphically using the
     first 6 harmonics (including the fundamental).
     """
+
+    sampling_frequency = 16e3
+
     # generate a unit sinusoid
-    unit_sinusoid = numpy.sin(2 * numpy.pi * numpy.arange(1000) / 1000)
+    unit_sinusoid = generate_unit_sinusoid(100, sampling_frequency, 0.05)
+
     # center clip the unit sinusoid at -.25 and +.25
-    clipped_unit_sinusoid = center_clip(unit_sinusoid, .25)
-    # plot the clipped unit sinusoid
+    clipped_unit_sinusoid = center_clip(unit_sinusoid, .25, reduce_amplitude=True)
+
+    # plot the original and clipped unit sinusoid on the same plot
+    time_axis = numpy.arange(len(unit_sinusoid)) / sampling_frequency
     pyplot.figure()
-    pyplot.title('Clipped Unit Sinusoid')
-    pyplot.plot(clipped_unit_sinusoid)
-    pyplot.xlabel('Samples')
+    pyplot.title('Unit sinusoid and center clipped unit sinusoid')
+    pyplot.plot(time_axis, unit_sinusoid, label='Unit sinusoid')
+    pyplot.plot(time_axis, clipped_unit_sinusoid, label='Center clipped unit sinusoid')
+    pyplot.xlabel('Time [seconds]')
+    pyplot.xlim(0, 0.05)
     pyplot.ylabel('Amplitude')
+    pyplot.legend()
     pyplot.show()
 
     # calculate the THD of the clipped unit sinusoid
