@@ -82,15 +82,8 @@ def part3():
     # Get the spectrogram within the selected interval
     selected_spectrogram = Sxx[:, t_idx_start:t_idx_end]
 
-    max_frequency_bin = numpy.argmax(numpy.max(selected_spectrogram, axis=1))
-    f_max = f[max_frequency_bin]
-
     # Calculate the peak velocity
     v_peak = compute_peak_velocity(3500, fo, c, theta)
-
-    # for each time, compute the peak velocity then average them to get the average velocity
-    v_avg = numpy.mean([compute_peak_velocity(numpy.argmax(selected_spectrogram[:, t_idx]), fo, c, theta) for t_idx in
-                        range(selected_spectrogram.shape[1])])
 
     # Plot the zoomed-in spectrogram
     plt.figure(figsize=(10, 6))
@@ -108,9 +101,7 @@ def part3():
     # Show the plot
     plt.show()
 
-    print(f"Highest frequency (f_max): {f_max} Hz")
     print(f"Peak velocity (v_peak): {v_peak} m/s")
-    print(f"Average velocity (v_avg): {v_avg} m/s")
 
 
 def find_average_heart_rate(tone_data, fs):
