@@ -7,6 +7,10 @@ from scipy.signal import resample, get_window, lfilter
 
 # Helper function to handle windowing and overlap-adding of frames
 def frame_processing(signal, frame_size, frame_step, window, process_frame_func, *args, **kwargs):
+    # If signal is stereo (2 channels), convert to mono by averaging the channels
+    if len(signal.shape) == 2 and signal.shape[1] == 2:
+        signal = signal.mean(axis=1)
+
     num_frames = 1 + int((len(signal) - frame_size) / frame_step)
     processed_signal = np.zeros(len(signal))
 
@@ -40,25 +44,28 @@ def pitch_shift_frame(frame, sr, target_pitch, original_pitch=440.0):
 
 
 # process a frame and generate whispered speech
-def whisper_frame(frame, frame_index, noise_type='white'):
-    # LPC order, typically 2 + sr / 1000
-    lpc_order = int(2 + len(frame) / 1000)
+def whisper_frame(frame, frame_index, noise_gain = 0.1, gain = 16.0):
+    # Generate a white noise signal with the same length as the frame
+    noise = np.random.randn(len(frame))
+
+    # Generate pink noise
+    # noise = np.random.randn(len(frame))
+    # noise = np.cumsum(noise)
+    # noise /= max(1, np.sqrt(len(frame)))  # Normalize energy over time
+
+    # Pre-emphasize the speech before LPC analysis
+    pre_emphasis_coeff = 0.97
+    pre_emphasized_frame = np.append(frame[0], frame[1:] - pre_emphasis_coeff * frame[:-1])
+
+    # LPC order, typically 2 + frame_length / 1000
+    lpc_order = 512  # int(2 + len(frame) / 1000)
     # Compute LPC coefficients from the speech frame
-    lpc_coeff = librosa.lpc(frame, order=lpc_order)
+    lpc_coeff = librosa.lpc(pre_emphasized_frame, order=lpc_order)
 
-    # Generate noise
-    if noise_type == 'white':
-        noise = np.random.randn(len(frame))
-    elif noise_type == 'pink':
-        noise = np.random.randn(len(frame))
-        noise = np.cumsum(noise)
-        noise /= max(1, np.sqrt(len(frame)))  # Normalize energy over time
-    else:
-        raise ValueError("Unsupported noise color: {}. Use 'white' or 'pink'.".format(noise_type))
+    # Apply LPC coefficients to the noise signal
+    whispered_frame = lfilter([1], lpc_coeff, noise * noise_gain)
 
-    # Whisper synthesis using LPC coefficients and generated noise
-    whispered_frame = lfilter([1], lpc_coeff, noise)
-    return whispered_frame
+    return whispered_frame * gain
 
 
 def part1():
@@ -76,7 +83,7 @@ def part1():
     window = get_window(window_type, frame_size)
 
     # Process the signal with no additional processing function (pass through)
-    synthetic_signal = frame_processing(ones_signal, frame_size, frame_shift, window, lambda x: x)
+    synthetic_signal = frame_processing(ones_signal, frame_size, frame_shift, window, lambda x, y: x)
 
     # Plot the synthetic signal
     plt.plot(synthetic_signal)
@@ -87,9 +94,8 @@ def part1():
 
 
 def part2():
-    sr, signal = wavfile.read('your_voice_sample.wav')
-    frame_size_ms, frame_shift_ms = 25, 10
-    noise_color = 'pink'  # Can be 'white' or 'pink'
+    sr, signal = wavfile.read(voice_sample_filename)
+    frame_size_ms, frame_shift_ms = 150, 70
 
     # Convert frame parameters from ms to samples
     frame_size = int(frame_size_ms * sr / 1000)
@@ -99,14 +105,14 @@ def part2():
     window = get_window('hann', frame_size)
 
     # Apply whisper transformation
-    whispered_signal = frame_processing(signal, frame_size, frame_shift, window, whisper_frame, noise_type=noise_color)
+    whispered_signal = frame_processing(signal, frame_size, frame_shift, window, whisper_frame, gain=64)
 
     # Save the whispered signal to a WAV file
     wavfile.write('whispered_voice.wav', sr, whispered_signal.astype(np.int16))
 
 
 def part3():
-    sr, signal = wavfile.read('your_voice_sample.wav')
+    sr, signal = wavfile.read(voice_sample_filename)
     pitch_sequence = [220, 247, 262]  # A simple C-E-G sequence for pitch shifting (in Hz)
     segment_size = 256  # Segment size (in samples)
 
@@ -117,7 +123,8 @@ def part3():
         return pitch_shift_frame(frame, sr, current_pitch)
 
     # Process the entire signal frame by frame
-    pitched_signal = frame_processing(signal, segment_size, segment_size, np.ones(segment_size), process_with_pitch_sequence)
+    pitched_signal = frame_processing(signal, segment_size, segment_size, np.ones(segment_size),
+                                      process_with_pitch_sequence)
 
     # Save the pitch-modified signal to a WAV file
     wavfile.write('variable_pitch_output.wav', sr, pitched_signal.astype(np.int16))
@@ -125,6 +132,7 @@ def part3():
 
 # Run parts 1, 2, and 3
 if __name__ == '__main__':
-    part1()
+    voice_sample_filename = 'hello_world.wav'
+    # part1()
     part2()
-    part3()
+    # part3()
