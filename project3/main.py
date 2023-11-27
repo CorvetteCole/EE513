@@ -19,7 +19,7 @@ def frame_processing(signal, frame_size, frame_step, window, process_frame_func,
         windowed_frame = frame * window
 
         # Process the windowed frame
-        processed_frame = process_frame_func(windowed_frame, *args, **kwargs)
+        processed_frame = process_frame_func(windowed_frame, i, *args, **kwargs)
 
         # Overlap-add the processed frame
         processed_signal[start_index:end_index] += processed_frame
@@ -40,7 +40,7 @@ def pitch_shift_frame(frame, sr, target_pitch, original_pitch=440.0):
 
 
 # process a frame and generate whispered speech
-def whisper_frame(frame, noise_type='white'):
+def whisper_frame(frame, frame_index, noise_type='white'):
     # LPC order, typically 2 + sr / 1000
     lpc_order = int(2 + len(frame) / 1000)
     # Compute LPC coefficients from the speech frame
@@ -111,13 +111,13 @@ def part3():
     segment_size = 256  # Segment size (in samples)
 
     # Define the processing for each frame based on the pitch_sequence
-    def process_with_pitch_sequence(frame, index):
-        current_pitch = pitch_sequence[(index // segment_size) % len(pitch_sequence)]
+    def process_with_pitch_sequence(frame, frame_index):
+        # Determine the pitch for the current frame based on the index
+        current_pitch = pitch_sequence[frame_index % len(pitch_sequence)]
         return pitch_shift_frame(frame, sr, current_pitch)
 
     # Process the entire signal frame by frame
-    pitched_signal = frame_processing(signal, segment_size, segment_size, np.ones(segment_size),
-                                      process_with_pitch_sequence)
+    pitched_signal = frame_processing(signal, segment_size, segment_size, np.ones(segment_size), process_with_pitch_sequence)
 
     # Save the pitch-modified signal to a WAV file
     wavfile.write('variable_pitch_output.wav', sr, pitched_signal.astype(np.int16))
