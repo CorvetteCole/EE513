@@ -25,6 +25,12 @@ python project1/generate_scale.py
 You may also manually generate notes on a scale with a reference frequency using `project1/tone_gen.py`. Run any python
 file with the `-h` or `--help` flag to see the available options.
 
+### Project 3
+
+```shell
+python main.py -f hello_world.wav
+```
+
 ## Homework
 ### Homework 2
 
@@ -37,3 +43,4 @@ python homework2/main.py
 ```shell
 python homework3/main.py
 ```
+

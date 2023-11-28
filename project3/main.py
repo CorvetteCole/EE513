@@ -3,6 +3,8 @@ from scipy.io import wavfile
 import matplotlib.pyplot as plt
 import librosa
 from scipy.signal import resample, get_window, lfilter
+import argparse
+from pathlib import Path
 
 
 # Helper function to handle windowing and overlap-adding of frames
@@ -94,7 +96,7 @@ def part1():
 
 
 def part2():
-    sr, signal = wavfile.read(voice_sample_filename)
+    sr, signal = wavfile.read(voice_sample_file)
     frame_size_ms, frame_shift_ms = 200, 20
 
     # Convert frame parameters from ms to samples
@@ -109,13 +111,17 @@ def part2():
                                         noise_gain=0.05)
 
     # Save the whispered signal to a WAV file
-    wavfile.write('whispered_voice.wav', sr, whispered_signal.astype(np.int16))
+    wavfile.write(voice_sample_file.stem + '_whisper.wav', sr, whispered_signal.astype(np.int16))
 
 
 def part3():
-    sr, signal = wavfile.read(voice_sample_filename)
-    pitch_sequence = [1024, 16, 128]  # A simple C-E-G sequence for pitch shifting (in Hz)
-    segment_size = 256  # Segment size (in samples)
+    sr, signal = wavfile.read(voice_sample_file)
+    pitch_sequence = [8, 16, 32, 64, 128, 256]
+    frame_size_ms = 1024  # Segment size
+    frame_size = int(frame_size_ms * sr / 1000)
+
+    # Get the window function
+    window = get_window('hann', frame_size)
 
     # Define the processing for each frame based on the pitch_sequence
     def process_with_pitch_sequence(frame, frame_index):
@@ -124,16 +130,28 @@ def part3():
         return pitch_shift_frame(frame, sr, current_pitch)
 
     # Process the entire signal frame by frame
-    pitched_signal = frame_processing(signal, segment_size, segment_size, np.ones(segment_size),
+    pitched_signal = frame_processing(signal, frame_size, frame_size, window,
                                       process_with_pitch_sequence)
 
     # Save the pitch-modified signal to a WAV file
-    wavfile.write('variable_pitch_output.wav', sr, pitched_signal.astype(np.int16))
+    wavfile.write(voice_sample_file.stem + '_variable_pitch.wav', sr, pitched_signal.astype(np.int16))
 
 
 # Run parts 1, 2, and 3
 if __name__ == '__main__':
-    voice_sample_filename = 'hello_world.wav'
-    # part1()
-    # part2()
+    parser = argparse.ArgumentParser(description='EE513 Project 3')
+    parser.add_argument('-f', '--file', type=str, default='hello_world.wav', help='Voice sample file', required=True)
+    args = parser.parse_args()
+
+    voice_sample_file = Path(args.file)
+
+    if not voice_sample_file.is_file():
+        print(f'File {voice_sample_file} does not exist')
+        exit(1)
+
+    print("Part 1")
+    part1()
+    print(f"Part 2: Turning {voice_sample_file} into a whisper")
+    part2()
+    print(f"Part 3: Turning {voice_sample_file} into a variable pitch signal")
     part3()
