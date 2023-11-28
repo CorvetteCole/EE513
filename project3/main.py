@@ -44,7 +44,7 @@ def pitch_shift_frame(frame, sr, target_pitch, original_pitch=440.0):
 
 
 # process a frame and generate whispered speech
-def whisper_frame(frame, frame_index, noise_gain = 0.1, gain = 16.0):
+def whisper_frame(frame, frame_index, noise_gain=0.1, gain=16.0):
     # Generate a white noise signal with the same length as the frame
     noise = np.random.randn(len(frame))
 
@@ -58,7 +58,7 @@ def whisper_frame(frame, frame_index, noise_gain = 0.1, gain = 16.0):
     pre_emphasized_frame = np.append(frame[0], frame[1:] - pre_emphasis_coeff * frame[:-1])
 
     # LPC order, typically 2 + frame_length / 1000
-    lpc_order = 512  # int(2 + len(frame) / 1000)
+    lpc_order = 32  # int(2 + len(frame) / 1000)
     # Compute LPC coefficients from the speech frame
     lpc_coeff = librosa.lpc(pre_emphasized_frame, order=lpc_order)
 
@@ -95,7 +95,7 @@ def part1():
 
 def part2():
     sr, signal = wavfile.read(voice_sample_filename)
-    frame_size_ms, frame_shift_ms = 150, 70
+    frame_size_ms, frame_shift_ms = 200, 20
 
     # Convert frame parameters from ms to samples
     frame_size = int(frame_size_ms * sr / 1000)
@@ -105,7 +105,8 @@ def part2():
     window = get_window('hann', frame_size)
 
     # Apply whisper transformation
-    whispered_signal = frame_processing(signal, frame_size, frame_shift, window, whisper_frame, gain=64)
+    whispered_signal = frame_processing(signal, frame_size, frame_shift, window, whisper_frame, gain=768,
+                                        noise_gain=0.05)
 
     # Save the whispered signal to a WAV file
     wavfile.write('whispered_voice.wav', sr, whispered_signal.astype(np.int16))
@@ -113,7 +114,7 @@ def part2():
 
 def part3():
     sr, signal = wavfile.read(voice_sample_filename)
-    pitch_sequence = [220, 247, 262]  # A simple C-E-G sequence for pitch shifting (in Hz)
+    pitch_sequence = [1024, 16, 128]  # A simple C-E-G sequence for pitch shifting (in Hz)
     segment_size = 256  # Segment size (in samples)
 
     # Define the processing for each frame based on the pitch_sequence
@@ -134,5 +135,5 @@ def part3():
 if __name__ == '__main__':
     voice_sample_filename = 'hello_world.wav'
     # part1()
-    part2()
-    # part3()
+    # part2()
+    part3()
