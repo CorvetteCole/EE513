@@ -24,7 +24,7 @@ def total_harmonic_distortion(signal: numpy.ndarray, sampling_frequency: float, 
 
     # Calculate the THD using the fundamental frequency and the first num_harmonics harmonics
     harmonic_indices = [fundamental_index * (i + 1) for i in range(num_harmonics)]
-    harmonic_powers = pxx[harmonic_indices]
+    harmonic_powers = [pxx[i] for i in harmonic_indices if i < len(pxx)]
     return 10 * numpy.log10(numpy.sum(harmonic_powers) / pxx[fundamental_index])
 
 
